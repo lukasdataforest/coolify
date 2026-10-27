@@ -108,6 +108,20 @@
                                 </div>
                             </a>
 
+
+                            <a href="{{ route('server.create.type', ['type' => 'dataforest']) }}"
+                                class="group flex min-h-32 flex-col rounded-xl border border-neutral-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-px hover:border-neutral-300 hover:no-underline hover:shadow-md dark:border-white/[0.08] dark:bg-white/[0.05] dark:hover:border-white/[0.14]"
+                                {{ wireNavigate() }}>
+                                <div class="flex items-start">
+                                    <x-dataforest-icon class="size-8" />
+                                </div>
+                                <div class="mt-auto pt-5">
+                                    <h3 class="text-[13px]! font-semibold! text-black dark:text-fg">dataforest</h3>
+                                    <p class="mt-1 text-[11px] leading-4 text-neutral-500 dark:text-fg-faint">
+                                        Provision a new seed in Germany.
+                                    </p>
+                                </div>
+                            </a>
                         </div>
                     </div>
                 </section>
@@ -131,6 +145,10 @@
                 <livewire:server.new.by-hostinger :private_keys="$private_keys" :limit_reached="$limit_reached"
                     :selected-token-uuid="$selectedTokenUuid"
                     wire:key="new-server-hostinger-{{ $selectedTokenUuid ?? 'select' }}" />
+            @elseif ($selectedType === 'dataforest')
+                <livewire:server.new.by-dataforest :private_keys="$private_keys" :limit_reached="$limit_reached"
+                    :selected-token-uuid="$selectedTokenUuid"
+                    wire:key="new-server-dataforest-{{ $selectedTokenUuid ?? 'select' }}" />
             @else
                 <livewire:server.new.by-ip :private_keys="$private_keys" :limit_reached="$limit_reached"
                     key="new-server-manual" />

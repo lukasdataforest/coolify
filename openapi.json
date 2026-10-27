@@ -6551,7 +6551,8 @@
                                                     "hetzner",
                                                     "digitalocean",
                                                     "vultr",
-                                                    "hostinger"
+                                                    "hostinger",
+                                                    "dataforest"
                                                 ]
                                             },
                                             "team_id": {
@@ -6611,7 +6612,8 @@
                                             "hetzner",
                                             "digitalocean",
                                             "vultr",
-                                            "hostinger"
+                                            "hostinger",
+                                            "dataforest"
                                         ],
                                         "example": "hetzner",
                                         "description": "The cloud provider."
@@ -10706,6 +10708,217 @@
                     },
                     "422": {
                         "$ref": "#\/components\/responses\/422"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "\/dataforest\/projects": {
+            "get": {
+                "tags": [
+                    "dataforest"
+                ],
+                "summary": "Get dataforest team projects",
+                "description": "A seed belongs to one project of the team the token belongs to.",
+                "operationId": "get-dataforest-projects",
+                "responses": {
+                    "200": {
+                        "description": "List of dataforest team projects."
+                    },
+                    "401": {
+                        "$ref": "#\/components\/responses\/401"
+                    },
+                    "403": {
+                        "description": "dataforest denied access to this resource for the cloud provider token."
+                    },
+                    "422": {
+                        "description": "Validation failed."
+                    },
+                    "429": {
+                        "description": "dataforest rate limit exceeded."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "\/dataforest\/regions": {
+            "get": {
+                "tags": [
+                    "dataforest"
+                ],
+                "summary": "Get dataforest regions",
+                "operationId": "get-dataforest-regions",
+                "responses": {
+                    "200": {
+                        "description": "List of dataforest regions."
+                    },
+                    "401": {
+                        "$ref": "#\/components\/responses\/401"
+                    },
+                    "403": {
+                        "description": "dataforest denied access to this resource for the cloud provider token."
+                    },
+                    "422": {
+                        "description": "Validation failed."
+                    },
+                    "429": {
+                        "description": "dataforest rate limit exceeded."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "\/dataforest\/plans": {
+            "get": {
+                "tags": [
+                    "dataforest"
+                ],
+                "summary": "Get the orderable dataforest plans of a region",
+                "description": "Each entry carries the `plan` reference that POST \/servers\/dataforest expects.",
+                "operationId": "get-dataforest-plans",
+                "parameters": [
+                    {
+                        "name": "location",
+                        "in": "query",
+                        "description": "Region slug, for example fra01.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of dataforest plans in the region."
+                    },
+                    "401": {
+                        "$ref": "#\/components\/responses\/401"
+                    },
+                    "403": {
+                        "description": "dataforest denied access to this resource for the cloud provider token."
+                    },
+                    "422": {
+                        "description": "Validation failed."
+                    },
+                    "429": {
+                        "description": "dataforest rate limit exceeded."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "\/dataforest\/images": {
+            "get": {
+                "tags": [
+                    "dataforest"
+                ],
+                "summary": "Get the installable dataforest image versions of a region",
+                "description": "Each entry carries the `ref` that POST \/servers\/dataforest expects as `image`.",
+                "operationId": "get-dataforest-images",
+                "parameters": [
+                    {
+                        "name": "location",
+                        "in": "query",
+                        "description": "Region slug, for example fra01.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of dataforest image versions in the region."
+                    },
+                    "401": {
+                        "$ref": "#\/components\/responses\/401"
+                    },
+                    "403": {
+                        "description": "dataforest denied access to this resource for the cloud provider token."
+                    },
+                    "422": {
+                        "description": "Validation failed."
+                    },
+                    "429": {
+                        "description": "dataforest rate limit exceeded."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "\/dataforest\/ssh-keys": {
+            "get": {
+                "tags": [
+                    "dataforest"
+                ],
+                "summary": "Get the SSH keys on the dataforest team key ring",
+                "operationId": "get-dataforest-ssh-keys",
+                "responses": {
+                    "200": {
+                        "description": "List of dataforest SSH keys."
+                    },
+                    "401": {
+                        "$ref": "#\/components\/responses\/401"
+                    },
+                    "403": {
+                        "description": "dataforest denied access to this resource for the cloud provider token."
+                    },
+                    "422": {
+                        "description": "Validation failed."
+                    },
+                    "429": {
+                        "description": "dataforest rate limit exceeded."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "\/servers\/dataforest": {
+            "post": {
+                "tags": [
+                    "dataforest"
+                ],
+                "summary": "Create a dataforest seed and a linked server",
+                "operationId": "create-dataforest-server",
+                "responses": {
+                    "201": {
+                        "description": "dataforest seed created and linked to a Coolify server."
+                    },
+                    "401": {
+                        "$ref": "#\/components\/responses\/401"
+                    },
+                    "403": {
+                        "description": "The token needs the deploy permission for a cloud-init script or extra SSH keys."
+                    },
+                    "422": {
+                        "description": "Validation failed."
+                    },
+                    "429": {
+                        "description": "dataforest rate limit exceeded."
                     }
                 },
                 "security": [
@@ -26069,6 +26282,10 @@
         {
             "name": "Databases",
             "description": "Databases"
+        },
+        {
+            "name": "dataforest",
+            "description": "dataforest"
         },
         {
             "name": "Deployments",

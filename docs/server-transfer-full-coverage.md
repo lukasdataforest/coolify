@@ -22,7 +22,7 @@ When you add a model or a setting to the transfer, add it to this file too.
 | ✅ | Proxy: redirect | redirect enabled + target URL |
 | ✅ | Proxy: custom error page | custom HTML (`proxy_error_page`) |
 | ➕ | Server role / build server | mark a second server as a build server |
-| ⚠️ | Cloud provider link | Hetzner/Vultr/DigitalOcean/Hostinger server ID + cloud provider token (needs a real cloud server) |
+| ⚠️ | Cloud provider link | Hetzner/Vultr/DigitalOcean/Hostinger/dataforest server ID + cloud provider token (needs a real cloud server) |
 | ⚠️ | Swarm | swarm manager / worker + swarm cluster + swarm destination (needs a swarm server) |
 
 ## 2. Server settings (Server → Advanced, Log drains, Sentinel/Metrics, Traffic, Cloudflare tunnel)

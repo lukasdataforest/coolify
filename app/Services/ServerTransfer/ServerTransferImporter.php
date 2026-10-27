@@ -687,6 +687,7 @@ class ServerTransferImporter
             'vultr_instance_id' => data_get($payload, 'vultr_instance_id'),
             'digitalocean_droplet_id' => data_get($payload, 'digitalocean_droplet_id'),
             'hostinger_virtual_machine_id' => data_get($payload, 'hostinger_virtual_machine_id'),
+            'dataforest_seed_id' => data_get($payload, 'dataforest_seed_id'),
             'proxy_error_page' => data_get($payload, 'proxy_error_page'),
             'swarm_cluster' => data_get($payload, 'swarm_cluster'),
         ]);

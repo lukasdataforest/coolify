@@ -839,7 +839,7 @@ class GlobalSearch extends Component
                 'type' => 'navigation',
                 'description' => 'Manage cloud provider tokens',
                 'link' => route('security.cloud-tokens'),
-                'search_text' => 'security cloud provider tokens hetzner digitalocean',
+                'search_text' => 'security cloud provider tokens hetzner digitalocean vultr hostinger dataforest',
             ] : null,
             $user->can('viewAny', IntegrationToken::class) ? [
                 'name' => 'Integration Tokens',

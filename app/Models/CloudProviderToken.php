@@ -8,6 +8,11 @@ class CloudProviderToken extends BaseModel
 {
     use HasFactory;
 
+    /**
+     * Cloud providers Coolify can hold an API token for.
+     */
+    public const PROVIDERS = ['hetzner', 'digitalocean', 'vultr', 'hostinger', 'dataforest'];
+
     protected $fillable = [
         'team_id',
         'provider',
@@ -44,6 +49,19 @@ class CloudProviderToken extends BaseModel
         $selectArray = collect($select)->concat(['id']);
 
         return self::whereTeamId(currentTeam()->id)->select($selectArray->all());
+    }
+
+    /**
+     * The provider name as the provider writes it; most are just capitalized.
+     */
+    public static function providerLabel(?string $provider): string
+    {
+        return match ($provider) {
+            null, '' => '',
+            'digitalocean' => 'DigitalOcean',
+            'dataforest' => 'dataforest',
+            default => ucfirst($provider),
+        };
     }
 
     public function scopeForProvider($query, string $provider)

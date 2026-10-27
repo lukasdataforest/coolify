@@ -184,6 +184,7 @@ final class ServerTransferCoverage
             'is_validating' => self::RUNTIME, 'detected_traefik_version' => self::RUNTIME, 'traefik_outdated_info' => self::RUNTIME,
             'hetzner_server_status' => self::RUNTIME, 'vultr_instance_status' => self::RUNTIME,
             'digitalocean_droplet_status' => self::RUNTIME, 'hostinger_virtual_machine_status' => self::RUNTIME,
+            'dataforest_seed_status' => self::RUNTIME,
             'server_metadata' => 'Facts about the host and the transfer state of the source; the target collects its own.',
             'canvas_position' => 'Place of the server on the servers canvas of the source; the target places it with its own servers.',
         ],

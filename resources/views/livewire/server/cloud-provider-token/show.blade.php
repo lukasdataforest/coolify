@@ -10,7 +10,7 @@
         <x-server.sidebar :server="$server" activeMenu="cloud-provider-token" />
 
         <div class="application-settings-form w-full">
-            @if ($server->hetzner_server_id || $server->vultr_instance_id || $server->digitalocean_droplet_id || $server->hostinger_virtual_machine_id)
+            @if ($server->hetzner_server_id || $server->vultr_instance_id || $server->digitalocean_droplet_id || $server->hostinger_virtual_machine_id || $server->dataforest_seed_id)
                 <x-application.settings-section id="server-cloud-token-section"
                     title="{{ $providerName }} token"
                     helper="Choose the cloud credential used to manage this server." flush>

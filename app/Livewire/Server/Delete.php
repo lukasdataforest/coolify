@@ -23,6 +23,8 @@ class Delete extends Component
 
     public bool $delete_from_hostinger = false;
 
+    public bool $delete_from_dataforest = false;
+
     public bool $force_delete_resources = false;
 
     public function mount(string $server_uuid)
@@ -45,6 +47,7 @@ class Delete extends Component
             $this->delete_from_vultr = in_array('delete_from_vultr', $selectedActions);
             $this->delete_from_digitalocean = in_array('delete_from_digitalocean', $selectedActions);
             $this->delete_from_hostinger = in_array('delete_from_hostinger', $selectedActions);
+            $this->delete_from_dataforest = in_array('delete_from_dataforest', $selectedActions);
             $this->force_delete_resources = in_array('force_delete_resources', $selectedActions);
         }
         // Another Coolify instance manages a transferred server. This instance deletes only its own records:
@@ -55,6 +58,7 @@ class Delete extends Component
             $this->delete_from_vultr = false;
             $this->delete_from_digitalocean = false;
             $this->delete_from_hostinger = false;
+            $this->delete_from_dataforest = false;
             $this->force_delete_resources = true;
         }
         try {
@@ -96,7 +100,9 @@ class Delete extends Component
                 $this->delete_from_digitalocean,
                 $this->server->digitalocean_droplet_id,
                 $this->delete_from_hostinger,
-                $this->server->hostinger_virtual_machine_id
+                $this->server->hostinger_virtual_machine_id,
+                $this->delete_from_dataforest,
+                $this->server->dataforest_seed_id
             );
 
             return redirectRoute($this, 'server.index');
@@ -149,6 +155,14 @@ class Delete extends Component
                 'id' => 'delete_from_hostinger',
                 'label' => 'Also delete VPS from Hostinger (at the end of the paid period)',
                 'default_warning' => 'The VPS on Hostinger will NOT be deleted, and Hostinger will keep billing for it.',
+            ];
+        }
+
+        if ($canDeleteFromProvider && $this->server->dataforest_seed_id) {
+            $checkboxes[] = [
+                'id' => 'delete_from_dataforest',
+                'label' => 'Also delete seed from dataforest Cloud',
+                'default_warning' => 'The actual seed on dataforest Cloud will NOT be deleted.',
             ];
         }
 

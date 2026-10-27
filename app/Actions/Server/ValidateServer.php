@@ -72,6 +72,19 @@ class ValidateServer
             }
         }
 
+        if ($server->dataforest_seed_id) {
+            $status = $server->refreshDataforestState();
+            if (in_array($status, ['stopped', 'suspended', 'error', 'deleted'], true)) {
+                $this->error = $status === 'deleted'
+                    ? 'dataforest seed is deleted or no longer accessible. Relink this server before validating.'
+                    : 'dataforest seed is '.($status ?? 'not running').'. Power it on before validating.';
+                $server->update([
+                    'validation_logs' => $this->error,
+                ]);
+                throw new \Exception($this->error);
+            }
+        }
+
         ['uptime' => $this->uptime, 'error' => $error] = $server->validateConnection();
         if (! $this->uptime) {
             $sanitizedError = htmlspecialchars($error ?? '', ENT_QUOTES, 'UTF-8');

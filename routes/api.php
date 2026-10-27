@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AuditEventsController;
 use App\Http\Controllers\Api\CloudInitScriptsController;
 use App\Http\Controllers\Api\CloudProviderTokensController;
 use App\Http\Controllers\Api\DatabasesController;
+use App\Http\Controllers\Api\DataforestController;
 use App\Http\Controllers\Api\DeployController;
 use App\Http\Controllers\Api\DestinationsController;
 use App\Http\Controllers\Api\DigitalOceanController;
@@ -237,6 +238,13 @@ Route::group([
     Route::get('/hostinger/ssh-keys', [HostingerController::class, 'sshKeys'])->middleware(['api.ability:read']);
     Route::get('/hostinger/post-install-scripts', [HostingerController::class, 'postInstallScripts'])->middleware(['api.ability:read']);
     Route::post('/servers/hostinger', [HostingerController::class, 'createServer'])->middleware(['api.ability:write']);
+
+    Route::get('/dataforest/projects', [DataforestController::class, 'projects'])->middleware(['api.ability:read']);
+    Route::get('/dataforest/regions', [DataforestController::class, 'regions'])->middleware(['api.ability:read']);
+    Route::get('/dataforest/plans', [DataforestController::class, 'plans'])->middleware(['api.ability:read']);
+    Route::get('/dataforest/images', [DataforestController::class, 'images'])->middleware(['api.ability:read']);
+    Route::get('/dataforest/ssh-keys', [DataforestController::class, 'sshKeys'])->middleware(['api.ability:read']);
+    Route::post('/servers/dataforest', [DataforestController::class, 'createServer'])->middleware(['api.ability:write']);
 
     Route::get('/resources', [ResourcesController::class, 'resources'])->middleware(['api.ability:read']);
 

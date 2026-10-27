@@ -9,6 +9,7 @@ use App\Models\CloudProviderToken;
 use App\Models\Server;
 use App\Models\Team;
 use App\Rules\ValidServerIp;
+use App\Services\DataforestService;
 use App\Services\DigitalOceanService;
 use App\Services\HetznerService;
 use App\Services\HostingerService;
@@ -86,6 +87,8 @@ class Show extends Component
 
     public ?string $hostingerVirtualMachineStatus = null;
 
+    public ?string $dataforestSeedStatus = null;
+
     public bool $hetznerServerManuallyStarted = false;
 
     public bool $vultrInstanceManuallyStarted = false;
@@ -93,6 +96,8 @@ class Show extends Component
     public bool $digitalOceanDropletManuallyStarted = false;
 
     public bool $hostingerVirtualMachineManuallyStarted = false;
+
+    public bool $dataforestSeedManuallyStarted = false;
 
     public bool $isValidating = false;
 
@@ -144,6 +149,18 @@ class Show extends Component
     public ?string $hostingerSearchError = null;
 
     public bool $hostingerNoMatchFound = false;
+
+    public Collection $availableDataforestTokens;
+
+    public ?int $selectedDataforestTokenId = null;
+
+    public ?string $manualDataforestSeedId = null;
+
+    public ?array $matchedDataforestSeed = null;
+
+    public ?string $dataforestSearchError = null;
+
+    public bool $dataforestNoMatchFound = false;
 
     public function getListeners()
     {
@@ -225,6 +242,7 @@ class Show extends Component
             $this->vultrInstanceStatus = $this->server->vultr_instance_status;
             $this->digitalOceanDropletStatus = $this->server->digitalocean_droplet_status;
             $this->hostingerVirtualMachineStatus = $this->server->hostinger_virtual_machine_status;
+            $this->dataforestSeedStatus = $this->server->dataforest_seed_status;
             $this->isValidating = $this->server->is_validating ?? false;
 
             // Load cloud provider tokens for linking
@@ -232,6 +250,7 @@ class Show extends Component
             $this->loadVultrTokens();
             $this->loadDigitalOceanTokens();
             $this->loadHostingerTokens();
+            $this->loadDataforestTokens();
 
         } catch (\Throwable $e) {
             return handleError($e, $this);
@@ -737,6 +756,33 @@ class Show extends Component
         }
     }
 
+    public function checkDataforestSeedStatus(bool $manual = false): mixed
+    {
+        try {
+            $this->authorize('view', $this->server);
+            if ($this->server->isTransferredAway()) {
+                return null;
+            }
+            if (! $this->server->dataforest_seed_id || ! $this->server->cloudProviderToken) {
+                $this->dispatch('error', 'This server is not associated with a dataforest seed or token.');
+
+                return null;
+            }
+
+            $this->dataforestSeedStatus = $this->server->refreshDataforestState();
+            $this->server->refresh();
+            $this->ip = $this->server->ip;
+
+            if ($manual) {
+                $this->dispatch('success', 'Seed status refreshed: '.ucfirst($this->dataforestSeedStatus ?? 'unknown'));
+            }
+
+            return null;
+        } catch (\Throwable $e) {
+            return handleError($e, $this);
+        }
+    }
+
     public function handleServerValidated($event = null)
     {
         // Check if event is for this server
@@ -759,6 +805,7 @@ class Show extends Component
         $this->loadVultrTokens();
         $this->loadDigitalOceanTokens();
         $this->loadHostingerTokens();
+        $this->loadDataforestTokens();
 
         $this->dispatch('refreshServerShow');
         $this->dispatch('refreshServer');
@@ -858,6 +905,31 @@ class Show extends Component
         }
     }
 
+    public function startDataforestSeed(): mixed
+    {
+        try {
+            $this->authorize('update', $this->server);
+            $this->server->assertNotTransferredAway();
+            if (! $this->server->dataforest_seed_id || ! $this->server->cloudProviderToken) {
+                $this->dispatch('error', 'This server is not associated with a dataforest seed or token.');
+
+                return null;
+            }
+
+            (new DataforestService($this->server->cloudProviderToken->token))
+                ->startSeed($this->server->dataforest_seed_id);
+
+            $this->dataforestSeedStatus = 'processing';
+            $this->server->update(['dataforest_seed_status' => 'processing']);
+            $this->dataforestSeedManuallyStarted = true;
+            $this->dispatch('success', 'dataforest seed is starting...');
+
+            return null;
+        } catch (\Throwable $e) {
+            return handleError($e, $this);
+        }
+    }
+
     public function refreshServerMetadata(): void
     {
         try {
@@ -916,6 +988,13 @@ class Show extends Component
     {
         $this->availableHostingerTokens = CloudProviderToken::ownedByCurrentTeam()
             ->where('provider', 'hostinger')
+            ->get();
+    }
+
+    public function loadDataforestTokens(): void
+    {
+        $this->availableDataforestTokens = CloudProviderToken::ownedByCurrentTeam()
+            ->where('provider', 'dataforest')
             ->get();
     }
 
@@ -1322,6 +1401,138 @@ class Show extends Component
             $this->hostingerSearchError = null;
 
             $this->dispatch('success', 'Server successfully linked to Hostinger!');
+            $this->dispatch('close-modal');
+            $this->dispatch('refreshServerShow');
+
+            return null;
+        } catch (\Throwable $e) {
+            return handleError($e, $this);
+        }
+    }
+
+    public function searchDataforestSeed(): void
+    {
+        $this->dataforestSearchError = null;
+        $this->dataforestNoMatchFound = false;
+        $this->matchedDataforestSeed = null;
+
+        if (! $this->selectedDataforestTokenId) {
+            $this->dataforestSearchError = 'Please select a dataforest token.';
+
+            return;
+        }
+
+        try {
+            $this->authorize('update', $this->server);
+            $this->server->assertNotTransferredAway();
+            $token = $this->availableDataforestTokens->firstWhere('id', $this->selectedDataforestTokenId);
+
+            if (! $token) {
+                $this->dataforestSearchError = 'Invalid token selected.';
+
+                return;
+            }
+
+            $matched = (new DataforestService($token->token))->findSeedByIp($this->server->ip);
+
+            if ($matched) {
+                $this->matchedDataforestSeed = $matched;
+            } else {
+                $this->dataforestNoMatchFound = true;
+            }
+        } catch (\Throwable $e) {
+            $this->dataforestSearchError = 'Failed to search dataforest seeds: '.$e->getMessage();
+        }
+    }
+
+    public function searchDataforestSeedById(): void
+    {
+        $this->dataforestSearchError = null;
+        $this->dataforestNoMatchFound = false;
+        $this->matchedDataforestSeed = null;
+
+        if (! $this->selectedDataforestTokenId) {
+            $this->dataforestSearchError = 'Please select a dataforest token first.';
+
+            return;
+        }
+
+        if (! $this->manualDataforestSeedId) {
+            $this->dataforestSearchError = 'Please enter a dataforest seed ID.';
+
+            return;
+        }
+
+        try {
+            $this->authorize('update', $this->server);
+            $this->server->assertNotTransferredAway();
+            $token = $this->availableDataforestTokens->firstWhere('id', $this->selectedDataforestTokenId);
+
+            if (! $token) {
+                $this->dataforestSearchError = 'Invalid token selected.';
+
+                return;
+            }
+
+            $seed = (new DataforestService($token->token))->getSeed(trim($this->manualDataforestSeedId));
+
+            if ($seed) {
+                $this->matchedDataforestSeed = $seed;
+            } else {
+                $this->dataforestNoMatchFound = true;
+            }
+        } catch (\Throwable $e) {
+            $this->dataforestSearchError = 'Failed to fetch dataforest seed: '.$e->getMessage();
+        }
+    }
+
+    public function linkToDataforest(): mixed
+    {
+        if (! $this->matchedDataforestSeed) {
+            $this->dispatch('error', 'No dataforest seed selected.');
+
+            return null;
+        }
+
+        try {
+            $this->authorize('update', $this->server);
+            $this->server->assertNotTransferredAway();
+            $token = $this->availableDataforestTokens->firstWhere('id', $this->selectedDataforestTokenId);
+
+            if (! $token) {
+                $this->dispatch('error', 'Invalid token selected.');
+
+                return null;
+            }
+
+            $dataforestService = new DataforestService($token->token);
+            $seed = $dataforestService->getSeed((string) $this->matchedDataforestSeed['id']);
+
+            if (! $seed) {
+                $this->dispatch('error', 'Could not find dataforest seed with ID: '.$this->matchedDataforestSeed['id']);
+
+                return null;
+            }
+
+            $updates = [
+                'cloud_provider_token_id' => $this->selectedDataforestTokenId,
+                'dataforest_seed_id' => (string) $seed['id'],
+                'dataforest_seed_status' => $seed['state'] ?? null,
+            ];
+            $ip = $dataforestService->getPublicIpAddress($seed);
+            if ($ip) {
+                $updates['ip'] = $ip;
+            }
+
+            $this->server->update($updates);
+            $this->dataforestSeedStatus = $seed['state'] ?? null;
+            $this->matchedDataforestSeed = null;
+            $this->selectedDataforestTokenId = null;
+            $this->manualDataforestSeedId = null;
+            $this->dataforestNoMatchFound = false;
+            $this->dataforestSearchError = null;
+
+            $this->dispatch('success', 'Server successfully linked to dataforest!');
             $this->dispatch('close-modal');
             $this->dispatch('refreshServerShow');
 

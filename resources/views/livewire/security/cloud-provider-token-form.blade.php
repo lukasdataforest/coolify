@@ -3,13 +3,15 @@
         x-data="{
             selectedProvider: $wire.entangle('provider'),
             get providerName() {
-                return this.selectedProvider === 'digitalocean' ? 'DigitalOcean' :
-                    this.selectedProvider.charAt(0).toUpperCase() + this.selectedProvider.slice(1);
+                if (this.selectedProvider === 'digitalocean') return 'DigitalOcean';
+                if (this.selectedProvider === 'dataforest') return 'dataforest';
+                return this.selectedProvider.charAt(0).toUpperCase() + this.selectedProvider.slice(1);
             },
             get providerConsoleUrl() {
                 if (this.selectedProvider === 'hetzner') return 'https://console.hetzner.com/projects';
                 if (this.selectedProvider === 'vultr') return 'https://console.vultr.com/user/apiaccess/';
                 if (this.selectedProvider === 'hostinger') return 'https://hpanel.hostinger.com/profile/api';
+                if (this.selectedProvider === 'dataforest') return 'https://cloud.dataforest.net/en';
                 return 'https://cloud.digitalocean.com/account/api/tokens';
             }
         }">
@@ -20,6 +22,7 @@
                 ['value' => 'digitalocean', 'label' => 'DigitalOcean'],
                 ['value' => 'vultr', 'label' => 'Vultr'],
                 ['value' => 'hostinger', 'label' => 'Hostinger'],
+                ['value' => 'dataforest', 'label' => 'dataforest'],
             ]" />
         @else
             <input type="hidden" wire:model="provider" />
@@ -32,6 +35,9 @@
                 target="_blank" class="font-medium text-coollabs hover:underline dark:text-brand-light">
                 <span x-text="providerName + ' console'"></span>
             </a>.
+            <span x-cloak x-show="selectedProvider === 'dataforest'">
+                It is the Personal Access Token from your team settings.
+            </span>
         </div>
 
         <div class="grid gap-4 lg:grid-cols-2">

@@ -89,6 +89,8 @@ it('creates Server with all fillable attributes', function () {
         'digitalocean_droplet_status' => 'active',
         'hostinger_virtual_machine_id' => 17923,
         'hostinger_virtual_machine_status' => 'running',
+        'dataforest_seed_id' => '550e8400-e29b-41d4-a716-446655440000',
+        'dataforest_seed_status' => 'running',
         'is_validating' => false,
         'detected_traefik_version' => 'v2.10.0',
         'traefik_outdated_info' => 'Up to date',
@@ -110,6 +112,8 @@ it('creates Server with all fillable attributes', function () {
     expect($server->digitalocean_droplet_status)->toBe('active');
     expect($server->hostinger_virtual_machine_id)->toBe(17923);
     expect($server->hostinger_virtual_machine_status)->toBe('running');
+    expect($server->dataforest_seed_id)->toBe('550e8400-e29b-41d4-a716-446655440000');
+    expect($server->dataforest_seed_status)->toBe('running');
     expect($server->ip_previous)->toBe('10.0.0.1');
 });
 

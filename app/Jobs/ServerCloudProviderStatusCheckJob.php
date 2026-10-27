@@ -50,6 +50,9 @@ class ServerCloudProviderStatusCheckJob implements ShouldBeEncrypted, ShouldQueu
                 'hostinger' => $this->server->hostinger_virtual_machine_id
                     ? $this->server->refreshHostingerState()
                     : null,
+                'dataforest' => $this->server->dataforest_seed_id
+                    ? $this->server->refreshDataforestState()
+                    : null,
                 default => null,
             };
         } catch (\Throwable $e) {

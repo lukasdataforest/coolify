@@ -160,6 +160,20 @@ class ValidateAndInstall extends Component
                 }
             }
 
+            if ($this->server->dataforest_seed_id) {
+                $status = $this->server->refreshDataforestState();
+                $this->server->refresh();
+
+                if (in_array($status, ['stopped', 'suspended', 'error', 'deleted'], true)) {
+                    $this->error = $status === 'deleted'
+                        ? 'dataforest seed is deleted or no longer accessible. Relink this server before validating.'
+                        : 'dataforest seed is '.($status ?? 'not running').'. Power it on before validating.';
+                    $this->server->update(['validation_logs' => $this->error]);
+
+                    return;
+                }
+            }
+
             ['uptime' => $this->uptime, 'error' => $error] = $this->server->validateConnection();
             if (! $this->uptime) {
                 $sanitizedError = htmlspecialchars($error ?? '', ENT_QUOTES, 'UTF-8');

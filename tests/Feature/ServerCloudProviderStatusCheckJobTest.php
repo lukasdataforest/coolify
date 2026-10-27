@@ -90,6 +90,53 @@ it('runs Hostinger provider state checks', function () {
         ->and($server->fresh()->hostinger_virtual_machine_status)->toBe('running');
 });
 
+it('schedules dataforest provider state checks', function () {
+    $server = createCloudServerForStatusCheckJobTest('dataforest', [
+        'dataforest_seed_id' => 'seed-1',
+        'dataforest_seed_status' => 'processing',
+    ]);
+
+    Queue::fake();
+    (new ServerManagerJob)->handle();
+    Queue::assertPushed(ServerCloudProviderStatusCheckJob::class, fn (ServerCloudProviderStatusCheckJob $job) => $job->server->is($server));
+});
+
+it('runs dataforest provider state checks and backfills the placeholder IP', function () {
+    $server = createCloudServerForStatusCheckJobTest('dataforest', [
+        'dataforest_seed_id' => 'seed-1',
+        'dataforest_seed_status' => 'processing',
+    ]);
+    Http::fake([
+        'https://api.dataforest.net/api/v1/public/seeds/seed-1' => Http::response([
+            'id' => 'seed-1',
+            'state' => 'running',
+            'ipv4' => [['address' => '203.0.113.24', 'primary_ip' => '203.0.113.24']],
+        ]),
+    ]);
+
+    (new ServerCloudProviderStatusCheckJob($server))->handle();
+
+    expect($server->fresh()->ip)->toBe('203.0.113.24')
+        ->and($server->fresh()->dataforest_seed_status)->toBe('running');
+});
+
+it('marks a dataforest seed deleted when it is gone at the provider', function () {
+    $server = createCloudServerForStatusCheckJobTest('dataforest', [
+        'dataforest_seed_id' => 'seed-gone',
+        'dataforest_seed_status' => 'running',
+    ]);
+    Http::fake([
+        'https://api.dataforest.net/api/v1/public/seeds/seed-gone' => Http::response([
+            'code' => 'ERR_NOT_FOUND',
+            'message' => 'Seed not found',
+        ], 404),
+    ]);
+
+    (new ServerCloudProviderStatusCheckJob($server))->handle();
+
+    expect($server->fresh()->dataforest_seed_status)->toBe('deleted');
+});
+
 it('backfills a DigitalOcean placeholder without changing reachability', function () {
     $server = createCloudServerForStatusCheckJobTest('digitalocean', [
         'digitalocean_droplet_id' => 987,

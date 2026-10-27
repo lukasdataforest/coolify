@@ -29,6 +29,7 @@ class CreatePage extends Component
             'vultr' => 'vultr',
             'digital-ocean' => 'digitalocean',
             'hostinger' => 'hostinger',
+            'dataforest' => 'dataforest',
             default => null,
         };
         $this->tokenProviderName = match ($type) {
@@ -36,6 +37,7 @@ class CreatePage extends Component
             'vultr' => 'Vultr',
             'digital-ocean' => 'DigitalOcean',
             'hostinger' => 'Hostinger',
+            'dataforest' => 'dataforest',
             default => null,
         };
         $this->hasProviderTokens = $this->tokenProvider
@@ -46,6 +48,7 @@ class CreatePage extends Component
             'vultr' => 'Vultr',
             'digital-ocean' => 'DigitalOcean',
             'hostinger' => 'Hostinger',
+            'dataforest' => 'dataforest',
             'manual' => 'Manual',
             default => 'New Server',
         };

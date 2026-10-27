@@ -66,20 +66,30 @@ it('shows link cloud provider dropdown with available unlinked providers', funct
         'name' => 'Test Hostinger Token',
     ]);
 
+    CloudProviderToken::query()->create([
+        'team_id' => $this->team->id,
+        'provider' => 'dataforest',
+        'token' => 'test-dataforest-token',
+        'name' => 'Test dataforest Token',
+    ]);
+
     Livewire::test(Show::class, ['server_uuid' => $this->server->uuid])
         ->assertSee('Link provider')
         ->assertSee('Hetzner')
         ->assertSee('DigitalOcean')
         ->assertSee('Vultr')
         ->assertSee('Hostinger')
+        ->assertSee('dataforest')
         ->assertSee('Hetzner Token')
         ->assertSee('DigitalOcean Token')
         ->assertSee('Vultr Token')
         ->assertSee('Hostinger Token')
+        ->assertSee('dataforest Token')
         ->assertSee('Server ID')
         ->assertSee('Droplet ID')
         ->assertSee('Instance ID')
         ->assertSee('Virtual Machine ID')
+        ->assertSee('Seed ID')
         ->assertSee('Search by server IP')
         ->assertSee('Search ID');
 });
@@ -118,6 +128,41 @@ it('links a manually added server to a Hostinger VPS by IP', function () {
 
     expect($this->server->fresh()->hostinger_virtual_machine_id)->toBe(17923)
         ->and($this->server->fresh()->hostinger_virtual_machine_status)->toBe('running')
+        ->and($this->server->fresh()->cloud_provider_token_id)->toBe($token->id);
+});
+
+it('links a manually added server to a dataforest seed by IP', function () {
+    $token = CloudProviderToken::query()->create([
+        'team_id' => $this->team->id,
+        'provider' => 'dataforest',
+        'token' => 'test-dataforest-token',
+        'name' => 'Test dataforest Token',
+    ]);
+
+    $seed = [
+        'id' => '550e8400-e29b-41d4-a716-446655440000',
+        'name' => 'seed-one',
+        'state' => 'running',
+        'ipv4' => [['address' => '1.2.3.4', 'primary_ip' => '1.2.3.4']],
+    ];
+
+    Http::fake([
+        'https://api.dataforest.net/api/v1/public/seeds?*' => Http::response([
+            'seeds' => [$seed],
+            'meta' => ['page' => 1, 'limit' => 100, 'total' => 1, 'total_pages' => 1],
+        ]),
+        'https://api.dataforest.net/api/v1/public/seeds/550e8400-e29b-41d4-a716-446655440000' => Http::response($seed),
+    ]);
+
+    Livewire::test(Show::class, ['server_uuid' => $this->server->uuid])
+        ->set('selectedDataforestTokenId', $token->id)
+        ->call('searchDataforestSeed')
+        ->assertSet('matchedDataforestSeed.id', '550e8400-e29b-41d4-a716-446655440000')
+        ->call('linkToDataforest')
+        ->assertDispatched('success');
+
+    expect($this->server->fresh()->dataforest_seed_id)->toBe('550e8400-e29b-41d4-a716-446655440000')
+        ->and($this->server->fresh()->dataforest_seed_status)->toBe('running')
         ->and($this->server->fresh()->cloud_provider_token_id)->toBe($token->id);
 });
 

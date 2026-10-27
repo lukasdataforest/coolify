@@ -20,6 +20,7 @@ use App\Jobs\ServerConnectionCheckJob;
 use App\Livewire\Server\Proxy;
 use App\Notifications\Server\Reachable;
 use App\Notifications\Server\Unreachable;
+use App\Services\DataforestService;
 use App\Services\DigitalOceanService;
 use App\Services\HetznerService;
 use App\Services\HostingerService;
@@ -377,6 +378,8 @@ class Server extends BaseModel
         'digitalocean_droplet_status',
         'hostinger_virtual_machine_id',
         'hostinger_virtual_machine_status',
+        'dataforest_seed_id',
+        'dataforest_seed_status',
         'is_validating',
         'validation_logs',
         'detected_traefik_version',
@@ -596,6 +599,48 @@ class Server extends BaseModel
         $status = $virtualMachine['state'] ?? null;
         $ip = $hostingerService->getPublicIpAddress($virtualMachine);
         $this->persistProviderState(['hostinger_virtual_machine_status' => $status]);
+        $this->backfillPlaceholderIp($ip);
+
+        return $status;
+    }
+
+    public function refreshDataforestState(): ?string
+    {
+        // Another instance manages the cloud server of an archive; keep the stored status.
+        if ($this->isTransferredAway()) {
+            return $this->dataforest_seed_status;
+        }
+
+        if (! $this->dataforest_seed_id || ! $this->cloudProviderToken || $this->cloudProviderToken->provider !== 'dataforest') {
+            return $this->dataforest_seed_status;
+        }
+
+        $dataforestService = new DataforestService($this->cloudProviderToken->token);
+
+        try {
+            $seed = $dataforestService->getSeed($this->dataforest_seed_id);
+        } catch (\Throwable $e) {
+            if ((int) $e->getCode() !== 404) {
+                throw $e;
+            }
+
+            if ($this->dataforest_seed_status !== 'deleted') {
+                $this->persistProviderState(['dataforest_seed_status' => 'deleted']);
+            }
+
+            return 'deleted';
+        }
+
+        if (empty($seed)) {
+            return $this->dataforest_seed_status;
+        }
+
+        $status = $seed['state'] ?? null;
+        $ip = $dataforestService->getPublicIpAddress($seed);
+
+        if ($this->dataforest_seed_status !== $status) {
+            $this->persistProviderState(['dataforest_seed_status' => $status]);
+        }
         $this->backfillPlaceholderIp($ip);
 
         return $status;

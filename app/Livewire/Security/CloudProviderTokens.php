@@ -66,6 +66,13 @@ class CloudProviderTokens extends Component
                 } else {
                     $this->dispatch('error', 'Hostinger token validation failed. Please check the token.');
                 }
+            } elseif ($token->provider === 'dataforest') {
+                $isValid = $this->validateDataforestToken($token->token);
+                if ($isValid) {
+                    $this->dispatch('success', 'dataforest token is valid.');
+                } else {
+                    $this->dispatch('error', 'dataforest token validation failed. Please check the token.');
+                }
             } else {
                 $this->dispatch('error', 'Unknown provider.');
             }
@@ -128,6 +135,19 @@ class CloudProviderTokens extends Component
                 ->acceptJson()
                 ->timeout(10)
                 ->get('https://developers.hostinger.com/api/vps/v1/virtual-machines')
+                ->successful();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    private function validateDataforestToken(string $token): bool
+    {
+        try {
+            return Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                ->get('https://api.dataforest.net/api/v1/public/team')
                 ->successful();
         } catch (\Throwable) {
             return false;

@@ -1,5 +1,5 @@
 <div x-data
-    x-init="@if ($server->hetzner_server_id && $server->cloudProviderToken && !$hetznerServerStatus) $wire.checkHetznerServerStatus(); @endif @if ($server->vultr_instance_id && $server->cloudProviderToken) $wire.checkVultrInstanceStatus(); @endif @if ($server->digitalocean_droplet_id && $server->cloudProviderToken && !$digitalOceanDropletStatus) $wire.checkDigitalOceanDropletStatus(); @endif @if ($server->hostinger_virtual_machine_id && $server->cloudProviderToken && !$hostingerVirtualMachineStatus) $wire.checkHostingerVirtualMachineStatus(); @endif">
+    x-init="@if ($server->hetzner_server_id && $server->cloudProviderToken && !$hetznerServerStatus) $wire.checkHetznerServerStatus(); @endif @if ($server->vultr_instance_id && $server->cloudProviderToken) $wire.checkVultrInstanceStatus(); @endif @if ($server->digitalocean_droplet_id && $server->cloudProviderToken && !$digitalOceanDropletStatus) $wire.checkDigitalOceanDropletStatus(); @endif @if ($server->hostinger_virtual_machine_id && $server->cloudProviderToken && !$hostingerVirtualMachineStatus) $wire.checkHostingerVirtualMachineStatus(); @endif @if ($server->dataforest_seed_id && $server->cloudProviderToken && !$dataforestSeedStatus) $wire.checkDataforestSeedStatus(); @endif">
     <x-slot:title>
         {{ data_get_str($server, 'name')->limit(24) }} | Server | Coolify
     </x-slot>
@@ -19,6 +19,7 @@
                         filled($server->digitalocean_droplet_id) => 'DigitalOcean',
                         filled($server->vultr_instance_id) => 'Vultr',
                         filled($server->hostinger_virtual_machine_id) => 'Hostinger',
+                        filled($server->dataforest_seed_id) => 'dataforest',
                         default => null,
                     };
                     $providerStatus = match ($provider) {
@@ -26,18 +27,20 @@
                         'DigitalOcean' => $digitalOceanDropletStatus,
                         'Vultr' => $vultrInstanceStatus,
                         'Hostinger' => $hostingerVirtualMachineStatus,
+                        'dataforest' => $dataforestSeedStatus,
                         default => null,
                     };
                     $providerStatusType = match (true) {
                         in_array($providerStatus, ['running', 'active']) => 'success',
-                        in_array($providerStatus, ['starting', 'initializing', 'pending', 'new', 'initial', 'creating', 'unsuspending', 'recreating', 'restoring']) => 'warning',
+                        in_array($providerStatus, ['starting', 'initializing', 'pending', 'new', 'initial', 'creating', 'processing', 'unsuspending', 'recreating', 'restoring']) => 'warning',
                         in_array($providerStatus, ['off', 'stopped', 'suspended', 'archive', 'deleted', 'destroyed', 'error']) => 'error',
                         default => 'neutral',
                     };
                     $hasLinkableCloudProviders = (!$server->hetzner_server_id && $availableHetznerTokens->isNotEmpty())
                         || (!$server->vultr_instance_id && $availableVultrTokens->isNotEmpty())
                         || (!$server->digitalocean_droplet_id && $availableDigitalOceanTokens->isNotEmpty())
-                        || (!$server->hostinger_virtual_machine_id && $availableHostingerTokens->isNotEmpty());
+                        || (!$server->hostinger_virtual_machine_id && $availableHostingerTokens->isNotEmpty())
+                        || (!$server->dataforest_seed_id && $availableDataforestTokens->isNotEmpty());
                     $hetznerMatch = $matchedHetznerServer
                         ? [
                             'name' => $matchedHetznerServer['name'] ?? 'Hetzner server',
@@ -64,6 +67,13 @@
                             'name' => $matchedHostingerVirtualMachine['hostname'] ?? 'Hostinger VPS',
                             'id' => $matchedHostingerVirtualMachine['id'] ?? null,
                             'status' => $matchedHostingerVirtualMachine['state'] ?? null,
+                        ]
+                        : null;
+                    $dataforestMatch = $matchedDataforestSeed
+                        ? [
+                            'name' => $matchedDataforestSeed['name'] ?? $matchedDataforestSeed['hostname'] ?? 'dataforest seed',
+                            'id' => $matchedDataforestSeed['id'] ?? null,
+                            'status' => $matchedDataforestSeed['state'] ?? null,
                         ]
                         : null;
                 @endphp
@@ -136,6 +146,19 @@
                                                 linkMethod="linkToHostinger"
                                                 :searchError="$hostingerSearchError" :noMatch="$hostingerNoMatchFound"
                                                 :matched="$hostingerMatch" />
+                                        @endif
+                                        @if (!$server->dataforest_seed_id && $availableDataforestTokens->isNotEmpty())
+                                            <x-server.provider-link-modal :server="$server" provider="dataforest"
+                                                providerLabel="dataforest" tokenModel="selectedDataforestTokenId"
+                                                :tokens="$availableDataforestTokens"
+                                                manualModel="manualDataforestSeedId"
+                                                manualLabel="Seed ID"
+                                                manualPlaceholder="550e8400-e29b-41d4-a716-446655440000"
+                                                searchByIdMethod="searchDataforestSeedById"
+                                                searchByIpMethod="searchDataforestSeed"
+                                                linkMethod="linkToDataforest"
+                                                :searchError="$dataforestSearchError" :noMatch="$dataforestNoMatchFound"
+                                                :matched="$dataforestMatch" />
                                         @endif
                                     </div>
                                 </div>
@@ -293,6 +316,12 @@
                                         title="Refresh provider status">
                                         <x-reicon name="refresh" class="size-3.5" />
                                     </x-forms.button>
+                                @elseif ($provider === 'dataforest')
+                                    <x-forms.button type="button" class="size-8! px-0!"
+                                        wire:click.prevent="checkDataforestSeedStatus(true)"
+                                        title="Refresh provider status">
+                                        <x-reicon name="refresh" class="size-3.5" />
+                                    </x-forms.button>
                                 @endif
                                 @if ($server->cloudProviderToken && ! $server->isTransferredAway())
                                     @if ($provider === 'Hetzner' && !$server->isFunctional() && $hetznerServerStatus === 'off')
@@ -307,6 +336,11 @@
                                         </x-forms.button>
                                     @elseif ($provider === 'Vultr' && $vultrInstanceStatus === 'stopped')
                                         <x-forms.button type="button" wire:click.prevent="startVultrInstance" isHighlighted
+                                            canGate="update" :canResource="$server">
+                                            Power On
+                                        </x-forms.button>
+                                    @elseif ($provider === 'dataforest' && $dataforestSeedStatus === 'stopped')
+                                        <x-forms.button type="button" wire:click.prevent="startDataforestSeed" isHighlighted
                                             canGate="update" :canResource="$server">
                                             Power On
                                         </x-forms.button>

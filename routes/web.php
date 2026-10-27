@@ -493,8 +493,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/servers/canvas', ServerCanvas::class)->name('server.canvas.index');
         Route::get('/registries', ServerDockerRegistries::class)->name('registries.index');
         Route::get('/servers/new', ServerCreatePage::class)->name('server.create')->middleware('can:create,'.Server::class);
-        Route::get('/servers/new/{type}/{token_uuid}', ServerCreatePage::class)->name('server.create.token')->middleware('can:create,'.Server::class)->whereIn('type', ['hetzner', 'vultr', 'digital-ocean', 'hostinger']);
-        Route::get('/servers/new/{type}', ServerCreatePage::class)->name('server.create.type')->middleware('can:create,'.Server::class)->whereIn('type', ['hetzner', 'vultr', 'digital-ocean', 'hostinger', 'manual']);
+        Route::get('/servers/new/{type}/{token_uuid}', ServerCreatePage::class)->name('server.create.token')->middleware('can:create,'.Server::class)->whereIn('type', ['hetzner', 'vultr', 'digital-ocean', 'hostinger', 'dataforest']);
+        Route::get('/servers/new/{type}', ServerCreatePage::class)->name('server.create.type')->middleware('can:create,'.Server::class)->whereIn('type', ['hetzner', 'vultr', 'digital-ocean', 'hostinger', 'dataforest', 'manual']);
 
         Route::prefix('server/{server_uuid}')->group(function () {
             Route::get('/', ServerShow::class)->name('server.show');

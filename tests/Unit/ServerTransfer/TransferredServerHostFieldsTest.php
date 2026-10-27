@@ -194,6 +194,8 @@ test('the cloud provider state of an archive is not refreshed', function () {
         'digitalocean_droplet_status' => 'active',
         'hostinger_virtual_machine_id' => 88,
         'hostinger_virtual_machine_status' => 'running',
+        'dataforest_seed_id' => 'seed-1',
+        'dataforest_seed_status' => 'running',
     ])->save();
     $server = archiveServerForHostFields($this->server);
 
@@ -201,6 +203,7 @@ test('the cloud provider state of an archive is not refreshed', function () {
         ->and($server->refreshVultrState())->toBe('active')
         ->and($server->refreshDigitalOceanState())->toBe('active')
         ->and($server->refreshHostingerState())->toBe('running')
+        ->and($server->refreshDataforestState())->toBe('running')
         ->and($server->backfillPlaceholderIp('198.51.100.9'))->toBeFalse()
         ->and($server->fresh()->ip)->toBe('1.2.3.4');
     Http::assertNothingSent();
@@ -210,7 +213,7 @@ test('a member cannot make the server page call the cloud provider for an archiv
     Http::fake();
     $member = User::factory()->create();
     $this->team->members()->attach($member->id, ['role' => 'member']);
-    $this->server->forceFill(['vultr_instance_id' => 'vultr-1', 'digitalocean_droplet_id' => 77, 'hostinger_virtual_machine_id' => 88])->save();
+    $this->server->forceFill(['vultr_instance_id' => 'vultr-1', 'digitalocean_droplet_id' => 77, 'hostinger_virtual_machine_id' => 88, 'dataforest_seed_id' => 'seed-1'])->save();
     $server = archiveServerForHostFields($this->server);
     $this->actingAs($member);
 
@@ -218,7 +221,8 @@ test('a member cannot make the server page call the cloud provider for an archiv
         ->call('checkHetznerServerStatus', true)
         ->call('checkVultrInstanceStatus', true)
         ->call('checkDigitalOceanDropletStatus', true)
-        ->call('checkHostingerVirtualMachineStatus', true);
+        ->call('checkHostingerVirtualMachineStatus', true)
+        ->call('checkDataforestSeedStatus', true);
 
     Http::assertNothingSent();
 });

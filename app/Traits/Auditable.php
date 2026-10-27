@@ -46,6 +46,7 @@ trait Auditable
         'hetzner_server_status',
         'vultr_instance_status',
         'digitalocean_droplet_status',
+        'dataforest_seed_status',
     ];
 
     private bool $auditLoggingEnabled = true;

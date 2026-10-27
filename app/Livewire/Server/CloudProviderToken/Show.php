@@ -38,6 +38,7 @@ class Show extends Component
             'tokenAdded.hetzner' => 'handleTokenAdded',
             'tokenAdded.digitalocean' => 'handleTokenAdded',
             'tokenAdded.hostinger' => 'handleTokenAdded',
+            'tokenAdded.dataforest' => 'handleTokenAdded',
         ];
     }
 
@@ -47,14 +48,10 @@ class Show extends Component
             filled($this->server->vultr_instance_id) => 'vultr',
             filled($this->server->digitalocean_droplet_id) => 'digitalocean',
             filled($this->server->hostinger_virtual_machine_id) => 'hostinger',
+            filled($this->server->dataforest_seed_id) => 'dataforest',
             default => 'hetzner',
         };
-        $this->providerName = match ($this->provider) {
-            'vultr' => 'Vultr',
-            'digitalocean' => 'DigitalOcean',
-            'hostinger' => 'Hostinger',
-            default => 'Hetzner',
-        };
+        $this->providerName = CloudProviderToken::providerLabel($this->provider);
 
         $this->cloudProviderTokens = CloudProviderToken::where('team_id', $this->server->team_id)
             ->where('provider', $this->provider)
@@ -174,6 +171,20 @@ class Show extends Component
                 }
             }
 
+            if ($this->server->dataforest_seed_id) {
+                $serverResponse = Http::withToken($token->token)
+                    ->acceptJson()
+                    ->timeout(10)
+                    ->get("https://api.dataforest.net/api/v1/public/seeds/{$this->server->dataforest_seed_id}");
+
+                if (! $serverResponse->successful()) {
+                    return [
+                        'valid' => false,
+                        'error' => 'This token cannot access this seed. It may belong to a different dataforest team.',
+                    ];
+                }
+            }
+
             return ['valid' => true];
         } catch (\Throwable $e) {
             return [
@@ -225,6 +236,7 @@ class Show extends Component
             'vultr' => 'https://api.vultr.com/v2/account',
             'digitalocean' => 'https://api.digitalocean.com/v2/account',
             'hostinger' => 'https://developers.hostinger.com/api/vps/v1/virtual-machines',
+            'dataforest' => 'https://api.dataforest.net/api/v1/public/team',
             default => 'https://api.hetzner.cloud/v1/servers',
         };
     }

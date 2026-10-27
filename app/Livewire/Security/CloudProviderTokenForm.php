@@ -3,12 +3,14 @@
 namespace App\Livewire\Security;
 
 use App\Livewire\Server\CloudProviderToken\Show as ServerCloudProviderTokenShow;
+use App\Livewire\Server\New\ByDataforest;
 use App\Livewire\Server\New\ByDigitalOcean;
 use App\Livewire\Server\New\ByHetzner;
 use App\Livewire\Server\New\ByHostinger;
 use App\Models\CloudProviderToken;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 
 class CloudProviderTokenForm extends Component
@@ -42,7 +44,7 @@ class CloudProviderTokenForm extends Component
     protected function rules(): array
     {
         return [
-            'provider' => 'required|string|in:hetzner,digitalocean,vultr,hostinger',
+            'provider' => ['required', 'string', Rule::in(CloudProviderToken::PROVIDERS)],
             'token' => 'required|string',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
@@ -92,6 +94,15 @@ class CloudProviderTokenForm extends Component
                     ->acceptJson()
                     ->timeout(10)
                     ->get('https://developers.hostinger.com/api/vps/v1/virtual-machines');
+
+                return $response->successful();
+            }
+
+            if ($provider === 'dataforest') {
+                $response = Http::withToken($token)
+                    ->acceptJson()
+                    ->timeout(10)
+                    ->get('https://api.dataforest.net/api/v1/public/team');
 
                 return $response->successful();
             }
@@ -149,6 +160,11 @@ class CloudProviderTokenForm extends Component
             if ($savedToken->provider === 'hostinger') {
                 $this->dispatch('tokenAdded.hostinger', tokenId: $savedToken->id)->to(ByHostinger::class);
                 $this->dispatch('tokenAdded.hostinger', tokenId: $savedToken->id)->to(ServerCloudProviderTokenShow::class);
+            }
+
+            if ($savedToken->provider === 'dataforest') {
+                $this->dispatch('tokenAdded.dataforest', tokenId: $savedToken->id)->to(ByDataforest::class);
+                $this->dispatch('tokenAdded.dataforest', tokenId: $savedToken->id)->to(ServerCloudProviderTokenShow::class);
             }
 
             if ($this->modal_mode) {

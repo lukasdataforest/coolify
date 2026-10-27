@@ -677,6 +677,7 @@ class ServerTransferExporter
             'vultr_instance_id' => $server->vultr_instance_id,
             'digitalocean_droplet_id' => $server->digitalocean_droplet_id,
             'hostinger_virtual_machine_id' => $server->hostinger_virtual_machine_id,
+            'dataforest_seed_id' => $server->dataforest_seed_id,
             'proxy_error_page' => $server->proxy_error_page,
             'swarm_cluster' => $server->swarm_cluster,
             'settings' => $settingsPayload,

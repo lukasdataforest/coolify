@@ -48,13 +48,23 @@ test('server type details are shown on the relevant cards instead of a technical
         ->not->toContain('<x-highlighted text="Remote Server:" />');
 });
 
+test('dataforest is available as an onboarding server provider', function () {
+    $view = file_get_contents(resource_path('views/livewire/boarding/index.blade.php'));
+
+    expect($view)
+        ->toContain('<x-modal-input title="Connect a dataforest Server" isFullWidth>')
+        ->toContain('<x-dataforest-icon class="size-10 shrink-0" />')
+        ->toContain('Deploy servers directly from your dataforest account.')
+        ->toContain('<livewire:server.new.by-dataforest :limit_reached="false" :from_onboarding="true" />');
+});
+
 test('server type cards use the standard card hover treatment', function () {
     $view = file_get_contents(resource_path('views/livewire/boarding/index.blade.php'));
     $hoverClasses = 'shadow-sm transition-all hover:-translate-y-px hover:border-neutral-300 hover:shadow-md';
     preg_match_all('/min-h-36[^\"]*'.preg_quote($hoverClasses, '/').'/', $view, $matches);
 
-    expect($matches[0])->toHaveCount(6)
-        ->and(substr_count($view, 'group relative cursor-pointer'))->toBe(6)
+    expect($matches[0])->toHaveCount(7)
+        ->and(substr_count($view, 'group relative cursor-pointer'))->toBe(7)
         ->and($view)->not->toContain('hover:border-coollabs/35 hover:bg-coollabs/[0.03]')
         ->and($view)->not->toContain('dark:hover:border-warning/25 dark:hover:bg-warning/[0.04]');
 });

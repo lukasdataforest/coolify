@@ -48,7 +48,7 @@
                         <div class="flex justify-center">
                             <span
                                 class="inline-flex rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-white/[0.06] dark:text-fg-dim">
-                                {{ $savedToken->provider === 'digitalocean' ? 'DigitalOcean' : ucfirst($savedToken->provider) }}
+                                {{ \App\Models\CloudProviderToken::providerLabel($savedToken->provider) }}
                             </span>
                         </div>
                         <p class="hidden truncate text-[12px] text-neutral-500 sm:block dark:text-fg-dim">{{ $savedToken->description ?: '-' }}</p>

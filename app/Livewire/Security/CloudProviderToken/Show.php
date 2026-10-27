@@ -86,6 +86,7 @@ class Show extends Component
             'digitalocean' => $this->validateDigitalOceanToken($this->cloudProviderToken->token),
             'vultr' => $this->validateVultrToken($this->cloudProviderToken->token),
             'hostinger' => $this->validateHostingerToken($this->cloudProviderToken->token),
+            'dataforest' => $this->validateDataforestToken($this->cloudProviderToken->token),
             default => false,
         };
 
@@ -139,12 +140,7 @@ class Show extends Component
 
     public function providerName(): string
     {
-        return match ($this->cloudProviderToken->provider) {
-            'digitalocean' => 'DigitalOcean',
-            'vultr' => 'Vultr',
-            'hostinger' => 'Hostinger',
-            default => 'Hetzner',
-        };
+        return CloudProviderToken::providerLabel($this->cloudProviderToken->provider);
     }
 
     private function validateHetznerToken(string $token): bool
@@ -190,6 +186,19 @@ class Show extends Component
                 ->acceptJson()
                 ->timeout(10)
                 ->get('https://developers.hostinger.com/api/vps/v1/virtual-machines')
+                ->successful();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    private function validateDataforestToken(string $token): bool
+    {
+        try {
+            return Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                ->get('https://api.dataforest.net/api/v1/public/team')
                 ->successful();
         } catch (\Throwable) {
             return false;

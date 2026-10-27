@@ -6,6 +6,7 @@ use App\Models\CloudProviderToken;
 use App\Models\Server;
 use App\Models\Team;
 use App\Notifications\Server\HetznerDeletionFailed;
+use App\Services\DataforestService;
 use App\Services\DigitalOceanService;
 use App\Services\HetznerService;
 use App\Services\HostingerService;
@@ -16,12 +17,12 @@ class DeleteServer
 {
     use AsAction;
 
-    public function handle(int $serverId, bool $deleteFromHetzner = false, ?int $hetznerServerId = null, ?int $cloudProviderTokenId = null, ?int $teamId = null, bool $deleteFromVultr = false, ?string $vultrInstanceId = null, bool $deleteFromDigitalOcean = false, ?int $digitalOceanDropletId = null, bool $deleteFromHostinger = false, ?int $hostingerVirtualMachineId = null)
+    public function handle(int $serverId, bool $deleteFromHetzner = false, ?int $hetznerServerId = null, ?int $cloudProviderTokenId = null, ?int $teamId = null, bool $deleteFromVultr = false, ?string $vultrInstanceId = null, bool $deleteFromDigitalOcean = false, ?int $digitalOceanDropletId = null, bool $deleteFromHostinger = false, ?int $hostingerVirtualMachineId = null, bool $deleteFromDataforest = false, ?string $dataforestSeedId = null)
     {
         $server = Server::withTrashed()->find($serverId);
         // Another Coolify instance manages the cloud server of a transferred server.
         if ($server?->isTransferredAway()) {
-            $deleteFromHetzner = $deleteFromVultr = $deleteFromDigitalOcean = $deleteFromHostinger = false;
+            $deleteFromHetzner = $deleteFromVultr = $deleteFromDigitalOcean = $deleteFromHostinger = $deleteFromDataforest = false;
         }
 
         // Delete from Hetzner even if server is already gone from Coolify
@@ -52,6 +53,14 @@ class DeleteServer
         if ($deleteFromHostinger && ($hostingerVirtualMachineId || ($server && $server->hostinger_virtual_machine_id))) {
             $this->deleteFromHostingerById(
                 $hostingerVirtualMachineId ?? $server->hostinger_virtual_machine_id,
+                $cloudProviderTokenId ?? $server->cloud_provider_token_id,
+                $teamId ?? $server->team_id
+            );
+        }
+
+        if ($deleteFromDataforest && ($dataforestSeedId || ($server && $server->dataforest_seed_id))) {
+            $this->deleteFromDataforestById(
+                $dataforestSeedId ?? $server->dataforest_seed_id,
                 $cloudProviderTokenId ?? $server->cloud_provider_token_id,
                 $teamId ?? $server->team_id
             );
@@ -235,6 +244,45 @@ class DeleteServer
             logger()->error('Failed to delete VPS from Hostinger', [
                 'error' => $e->getMessage(),
                 'hostinger_virtual_machine_id' => $hostingerVirtualMachineId,
+                'team_id' => $teamId,
+            ]);
+
+            throw $e;
+        }
+    }
+
+    private function deleteFromDataforestById(string $dataforestSeedId, ?int $cloudProviderTokenId, int $teamId): void
+    {
+        try {
+            $token = null;
+
+            if ($cloudProviderTokenId) {
+                $token = CloudProviderToken::where('id', $cloudProviderTokenId)
+                    ->where('team_id', $teamId)
+                    ->where('provider', 'dataforest')
+                    ->first();
+            }
+
+            if (! $token) {
+                $token = CloudProviderToken::where('team_id', $teamId)
+                    ->where('provider', 'dataforest')
+                    ->first();
+            }
+
+            if (! $token) {
+                throw new \RuntimeException('No dataforest token found for the server team.');
+            }
+
+            (new DataforestService($token->token))->deleteSeed($dataforestSeedId);
+
+            logger()->debug('Deleted seed from dataforest', [
+                'dataforest_seed_id' => $dataforestSeedId,
+                'team_id' => $teamId,
+            ]);
+        } catch (\Throwable $e) {
+            logger()->error('Failed to delete seed from dataforest', [
+                'error' => $e->getMessage(),
+                'dataforest_seed_id' => $dataforestSeedId,
                 'team_id' => $teamId,
             ]);
 
